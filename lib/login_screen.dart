@@ -1,8 +1,3 @@
-// ===================================================
-// FILE: lib/screens/login_success_screen.dart
-// Halaman sukses setelah login berhasil
-// ===================================================
-
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../home/home_screen.dart';  // ← TAMBAHKAN import
