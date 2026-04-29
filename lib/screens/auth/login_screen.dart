@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../utils/app_colors.dart';
-import '../../services/auth_service.dart';
-import '../home/home_screen.dart';
-import '../admin/dashboard_screen.dart';
+import '../../../../utils/app_colors.dart';
+import '../../../../services/auth_service.dart';
+import '../../../home/home_screen.dart';
+import '../../../admin/dashboard_screen.dart';
 import 'register_screen.dart';
-import 'forgot_password_screen.dart';
+import '../../forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

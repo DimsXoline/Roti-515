@@ -1,7 +1,7 @@
-import '../../services/auth_service.dart';
+import '../../../../services/auth_service.dart';
 import 'login_screen.dart';
 import 'package:flutter/material.dart';
-import '../../utils/app_colors.dart';
+import '../../../../utils/app_colors.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
