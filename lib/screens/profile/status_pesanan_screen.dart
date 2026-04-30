@@ -21,24 +21,24 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
 
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
-    
+
     final userId = await AuthService.getUserId();
-    
+
     if (userId != null) {
       final result = await AuthService.getOrders(userId: userId);
       if (result['success'] == true) {
         final allOrders = List<Map<String, dynamic>>.from(result['orders']);
         // Filter hanya pesanan yang BELUM selesai
         setState(() {
-          _orders = allOrders.where((order) => 
-            order['status'] != 'Selesai'
-          ).toList();
+          _orders = allOrders
+              .where((order) => order['status'] != 'Selesai')
+              .toList();
           _isLoading = false;
         });
         return;
       }
     }
-    
+
     // Data dummy
     await Future.delayed(const Duration(milliseconds: 500));
     setState(() {
@@ -91,7 +91,11 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
       appBar: AppBar(
         title: const Text(
           'Status Pesanan',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: AppColors.primary,
         centerTitle: true,
@@ -104,18 +108,18 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _orders.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadOrders,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _orders.length,
-                    itemBuilder: (context, index) {
-                      final order = _orders[index];
-                      return _buildOrderCard(order);
-                    },
-                  ),
-                ),
+          ? _buildEmptyState()
+          : RefreshIndicator(
+              onRefresh: _loadOrders,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _orders.length,
+                itemBuilder: (context, index) {
+                  final order = _orders[index];
+                  return _buildOrderCard(order);
+                },
+              ),
+            ),
     );
   }
 
@@ -124,7 +128,11 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt_long_outlined, size: 80, color: AppColors.textHint),
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 80,
+            color: AppColors.textHint,
+          ),
           const SizedBox(height: 16),
           Text(
             'Tidak ada pesanan aktif',
@@ -150,7 +158,7 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
     final status = order['status'] ?? 'Menunggu';
     final estimatedTime = order['estimated_time'] ?? 'Belum ditentukan';
     final progress = (order['progress'] ?? 0).toDouble();
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -181,13 +189,16 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: status == 'Sedang Dipanggang'
                       ? Colors.orange.withOpacity(0.1)
                       : status == 'Diproses'
-                          ? Colors.blue.withOpacity(0.1)
-                          : Colors.orange.withOpacity(0.1),
+                      ? Colors.blue.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -197,8 +208,8 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
                     color: status == 'Sedang Dipanggang'
                         ? Colors.orange
                         : status == 'Diproses'
-                            ? Colors.blue
-                            : Colors.orange,
+                        ? Colors.blue
+                        : Colors.orange,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -231,10 +242,7 @@ class _StatusPesananScreenState extends State<StatusPesananScreen> {
           if (progress > 0) ...[
             const Text(
               'Kemajuan Panggangan',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 6),
             Row(
