@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../utils/app_colors.dart';
 import '../auth/login_screen.dart';
-import '../../profile/order_history_screen.dart';
-import '../../profile/edit_profile_screen.dart';
+import '../profile/order_history_screen.dart';
+import '../profile/edit_profil_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
