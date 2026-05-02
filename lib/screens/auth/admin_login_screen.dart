@@ -1,10 +1,8 @@
-// ===================================================
-// FILE: lib/screens/admin_login_screen.dart
-// Halaman Login khusus Admin
-// ===================================================
-
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/role_toggle.dart';
+import '../../widgets/app_text_field.dart';
+import '../admin/dashboard_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -13,204 +11,185 @@ class AdminLoginScreen extends StatefulWidget {
   State<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
 
-class _AdminLoginScreenState extends State<AdminLoginScreen> {
-  bool _isPasswordVisible = false; // kontrol show/hide password
+class _AdminLoginScreenState extends State<AdminLoginScreen>
+    with SingleTickerProviderStateMixin {
+  bool _isAdmin = true;
+  bool _isLoading = false;
 
-  // Controller untuk mengambil teks yang diketik
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _handleLogin() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Username dan kata sandi tidak boleh kosong'),
+          backgroundColor: AppColors.brownDark,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const DashboardScreen(),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background, // warna latar krem
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, // rata kiri
-            children: [
-              _buildHeader(), // judul "Roti 515"
-              _buildWelcomeText(), // teks "Selamat Datang, Admin"
-              _buildSubtitle(), // teks keterangan di bawahnya
-              _buildUsernameField(), // input username
-              _buildPasswordField(), // input kata sandi
-              _buildLoginButton(), // tombol "Masuk ke Dashboard"
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: SlideTransition(
+              position: _slideAnim,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Brand name
+                  Center(
+                    child: Text(
+                      'Roti 515',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textMuted,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
 
-  // Bagian 1: Header "Roti 515"
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 32, bottom: 32),
-      child: Center(
-        child: Text(
-          'Roti 515',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryDark, // warna coklat gelap
-          ),
-        ),
-      ),
-    );
-  }
+                  // Greeting
+                  Text(
+                    _isAdmin
+                        ? 'Selamat Datang,\nAdmin'
+                        : 'Selamat Datang,\nPelanggan',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
 
-  // Bagian 2: Teks sambutan "Selamat Datang, Admin"
-  Widget _buildWelcomeText() {
-    return const Padding(
-      padding: EdgeInsets.only(bottom: 8),
-      child: Text(
-        'Selamat Datang,\nAdmin', // "\n" = pindah baris
-        style: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-          height: 1.2, // jarak antar baris
-        ),
-      ),
-    );
-  }
+                  // Role toggle
+                  RoleToggle(
+                    isAdmin: _isAdmin,
+                    onToggle: (val) => setState(() => _isAdmin = val),
+                  ),
+                  const SizedBox(height: 28),
 
-  // Bagian 3: Teks keterangan kecil
-  Widget _buildSubtitle() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 32),
-      child: Text(
-        'Masukkan masukan Username Dan Pasword Anda untuk melanjutkan ke dashboard.',
-        style: TextStyle(
-          fontSize: 14,
-          color: AppColors.textHint, // warna abu
-          height: 1.5, // jarak antar baris
-        ),
-      ),
-    );
-  }
+                  // Username field
+                  AppTextField(
+                    label: _isAdmin ? 'Username Admin' : 'Username',
+                    hint: 'nama_pengguna_anda',
+                    prefixIcon: Icons.person_outline_rounded,
+                    controller: _usernameController,
+                  ),
+                  const SizedBox(height: 20),
 
-  // Bagian 4: Input Username Admin
-  Widget _buildUsernameField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'USERNAME ADMIN', // label huruf kapital
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.5, // jarak antar huruf
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _usernameController,
-          decoration: InputDecoration(
-            hintText: 'nama_pengguna_anda',
-            hintStyle: TextStyle(color: AppColors.textHint),
-            prefixIcon: Icon(
-              Icons.person_outline, // ikon orang di kiri
-              color: AppColors.textHint,
-            ),
-            filled: true,
-            fillColor: AppColors.inputBg,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none, // hilangkan garis border
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
+                  // Password field
+                  AppTextField(
+                    label: 'Kata Sandi',
+                    hint: '••••••••••',
+                    prefixIcon: Icons.lock_outline_rounded,
+                    isPassword: true,
+                    trailingText: 'LUPA?',
+                    controller: _passwordController,
+                  ),
+                  const SizedBox(height: 40),
 
-  // Bagian 5: Input Kata Sandi
-  Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'KATA SANDI',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
+                  // Login button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brownDark,
+                        foregroundColor: AppColors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Masuk ke Dashboard',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward, size: 18),
+                              ],
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            Text(
-              'LUPA?', // link lupa password
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textHint,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _passwordController,
-          obscureText: !_isPasswordVisible, // sembunyikan teks jika false
-          decoration: InputDecoration(
-            hintText: '•••••••••••',
-            hintStyle: TextStyle(color: AppColors.textHint),
-            prefixIcon: Icon(Icons.lock_outline, color: AppColors.textHint),
-            suffixIcon: GestureDetector(
-              onTap: () {
-                setState(() {
-                  // "!" membalik nilai: false→true, true→false
-                  _isPasswordVisible = !_isPasswordVisible;
-                });
-              },
-              child: Icon(
-                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                color: AppColors.textHint,
-              ),
-            ),
-            filled: true,
-            fillColor: AppColors.inputBg,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        const SizedBox(height: 40), // jarak lebih besar sebelum tombol
-      ],
-    );
-  }
-
-  // Bagian 6: Tombol "Masuk ke Dashboard"
-  Widget _buildLoginButton() {
-    return SizedBox(
-      width: double.infinity, // lebar penuh
-      child: ElevatedButton.icon(
-        // tombol dengan ikon di kanan
-        onPressed: () {}, // nanti diisi logika login
-        icon: const Icon(
-          Icons.arrow_forward, // ikon panah ke kanan
-          color: Colors.white,
-        ),
-        label: const Text(
-          'Masuk ke Dashboard',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary, // warna coklat
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30), // sangat membulat
           ),
         ),
       ),

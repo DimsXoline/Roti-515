@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../Home/home_screen.dart';
-import '../../admin/dashboard_screen.dart';
+import '../../screens/admin/dashboard_screen.dart';
 import 'register_screen.dart';
 import '../auth/forgot_password_screen.dart';
 
@@ -37,22 +37,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result['success'] == true) {
       String role = result['user']['role'] ?? 'pelanggan';
-      
+
       // Validasi role dengan pilihan user
       if (_selectedRole == 'Admin' && role != 'admin') {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Akun ini bukan admin! Silakan pilih Pelanggan.')),
+          const SnackBar(
+            content: Text('Akun ini bukan admin! Silakan pilih Pelanggan.'),
+          ),
         );
         return;
       }
-      
+
       if (_selectedRole == 'Pelanggan' && role == 'admin') {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Akun ini adalah admin! Silakan pilih Admin.')),
+          const SnackBar(
+            content: Text('Akun ini adalah admin! Silakan pilih Admin.'),
+          ),
         );
         return;
       }
-      
+
       // Navigasi berdasarkan role
       if (role == 'admin') {
         Navigator.pushReplacement(
@@ -66,9 +70,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'])),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result['message'])));
     }
   }
 
@@ -118,7 +122,11 @@ class _LoginScreenState extends State<LoginScreen> {
               color: AppColors.primary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.bakery_dining, size: 30, color: Colors.white),
+            child: const Icon(
+              Icons.bakery_dining,
+              size: 30,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -190,7 +198,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Email', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        const Text(
+          'Email',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: _emailController,
@@ -218,12 +229,17 @@ class _LoginScreenState extends State<LoginScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Kata Sandi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            const Text(
+              'Kata Sandi',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const ForgotPasswordScreen(),
+                  ),
                 );
               },
               child: Text(
@@ -242,7 +258,8 @@ class _LoginScreenState extends State<LoginScreen> {
             hintStyle: TextStyle(color: AppColors.textHint),
             prefixIcon: Icon(Icons.lock_outline, color: AppColors.textHint),
             suffixIcon: IconButton(
-              onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+              onPressed: () =>
+                  setState(() => _isPasswordVisible = !_isPasswordVisible),
               icon: Icon(
                 _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                 color: AppColors.textHint,
@@ -274,7 +291,14 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         child: _isLoading
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
             : const Text(
                 'Masuk Ke Akun',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -331,7 +355,10 @@ class _LoginScreenState extends State<LoginScreen> {
             },
             child: Text(
               'Daftar Sekarang',
-              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
