@@ -15,9 +15,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-
       final data = jsonDecode(response.body);
-
       if (response.statusCode == 200 && data['success'] == true) {
         return {'success': true, 'token': data['token'], 'user': data['user']};
       } else {
@@ -46,9 +44,7 @@ class AuthService {
           'password': password,
         }),
       );
-
       final data = jsonDecode(response.body);
-
       if (response.statusCode == 200 && data['success'] == true) {
         return {
           'success': true,
@@ -66,7 +62,7 @@ class AuthService {
     }
   }
 
-  // ========== CEK EMAIL (untuk Lupa Password) ==========
+  // ========== CEK EMAIL ==========
   static Future<Map<String, dynamic>> checkEmail(String email) async {
     try {
       final response = await http.post(
@@ -74,31 +70,30 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
-
-      final data = jsonDecode(response.body);
-      return data;
+      return jsonDecode(response.body);
     } catch (e) {
       return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
     }
   }
 
   // ========== RESET PASSWORD ==========
-  static Future<Map<String, dynamic>> resetPassword(String email, String newPassword) async {
+  static Future<Map<String, dynamic>> resetPassword(
+    String email,
+    String newPassword,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/reset_password.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'new_password': newPassword}),
       );
-
-      final data = jsonDecode(response.body);
-      return data;
+      return jsonDecode(response.body);
     } catch (e) {
       return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
     }
   }
 
-  // ========== LOGIN ADMIN (khusus admin) ==========
+  // ========== LOGIN ADMIN ==========
   static Future<Map<String, dynamic>> adminLogin({
     required String email,
     required String password,
@@ -109,10 +104,10 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-
       final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true && data['user']['role'] == 'admin') {
+      if (response.statusCode == 200 &&
+          data['success'] == true &&
+          data['user']['role'] == 'admin') {
         return {'success': true, 'token': data['token'], 'user': data['user']};
       } else {
         return {'success': false, 'message': 'Email atau password admin salah'};
@@ -122,14 +117,33 @@ class AuthService {
     }
   }
 
-  // ========== GET ALL USERS (untuk admin) ==========
-  static Future<Map<String, dynamic>> getUsers() async {
+  // ========== GET USER ID ==========
+  static Future<String?> getUserId() async {
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/users.php'),
+        Uri.parse('$_baseUrl/get_user.php'),
         headers: {'Content-Type': 'application/json'},
       );
+      final data = jsonDecode(response.body);
+      if (data['success'] == true && data['user'] != null) {
+        return data['user']['id']?.toString();
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 
+  // ========== GET ORDERS ==========
+  // Dipanggil: AuthService.getOrders(userId: userId)
+  static Future<Map<String, dynamic>> getOrders({
+    required String userId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/orders.php?user_id=$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
       final data = jsonDecode(response.body);
       return data;
     } catch (e) {
@@ -137,7 +151,20 @@ class AuthService {
     }
   }
 
-  // ========== DELETE USER (untuk admin) ==========
+  // ========== GET ALL USERS (admin) ==========
+  static Future<Map<String, dynamic>> getUsers() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/users.php'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
+    }
+  }
+
+  // ========== DELETE USER (admin) ==========
   static Future<Map<String, dynamic>> deleteUser(int userId) async {
     try {
       final response = await http.post(
@@ -145,9 +172,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id': userId}),
       );
-
-      final data = jsonDecode(response.body);
-      return data;
+      return jsonDecode(response.body);
     } catch (e) {
       return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
     }

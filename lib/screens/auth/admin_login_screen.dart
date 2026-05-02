@@ -70,7 +70,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const DashboardScreen(),
+        pageBuilder: (_, __, ___) => const AdminDashboardScreen(),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
         transitionDuration: const Duration(milliseconds: 400),
