@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../models/product.dart';
+import '../../models/products.dart';
 import '../../../widgets/product_card.dart';
 import '../../../widgets/custom_search_bar.dart';
 import '../../../utils/app_colors.dart';
-import '../../checkout/checkout_screen.dart';
+import '../../../screens/checkout/checkout_screen.dart';
 
 class ProductScreen extends StatefulWidget {
   const ProductScreen({super.key});

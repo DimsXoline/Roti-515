@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
-import '../../models/product.dart';
+import '../../models/products.dart';
 import 'order_confirmation_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
