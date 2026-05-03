@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static const String _baseUrl = 'http://localhost/roti_515_api';
+  static const String _baseUrl = 'http://localhost/roti-515/roti_515_api';
 
   // ========== LOGIN ==========
   static Future<Map<String, dynamic>> login({
