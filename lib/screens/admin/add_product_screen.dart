@@ -109,7 +109,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -143,7 +143,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.toggleBg,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.textHint.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.textHint.withValues(alpha: 0.3)),
                 ),
                 child: _selectedImage != null
                     ? ClipRRect(
@@ -182,7 +182,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
