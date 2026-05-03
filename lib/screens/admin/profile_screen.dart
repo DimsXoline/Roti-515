@@ -1,9 +1,22 @@
+// screens/admin/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../utils/app_colors.dart';
 import '../auth/login_screen.dart';
+import 'edit_admin_profile_screen.dart';
 
-class AdminProfileScreen extends StatelessWidget {
+class AdminProfileScreen extends StatefulWidget {
   const AdminProfileScreen({super.key});
+
+  @override
+  State<AdminProfileScreen> createState() => _AdminProfileScreenState();
+}
+
+class _AdminProfileScreenState extends State<AdminProfileScreen> {
+  String _nama = 'Erine';
+  String _pengurus = 'ADMINISTRATOR';
+  String _email = 'admin@roti515.com';
+  String? _imagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -14,40 +27,81 @@ class AdminProfileScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 40),
-            
+
             // Avatar
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            GestureDetector(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditAdminProfileScreen(
+                      nama: _nama,
+                      pengurus: _pengurus,
+                      email: _email,
+                      imagePath: _imagePath,
+                    ),
                   ),
-                ],
+                );
+                if (result != null && mounted) {
+                  setState(() {
+                    if (result['nama'] != null && result['nama'].isNotEmpty) {
+                      _nama = result['nama'];
+                    }
+                    if (result['pengurus'] != null && result['pengurus'].isNotEmpty) {
+                      _pengurus = result['pengurus'];
+                    }
+                    if (result['image'] != null) {
+                      _imagePath = result['image'].path;
+                    }
+                  });
+                }
+              },
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: _imagePath != null
+                    ? ClipOval(
+                        child: Image.file(
+                          File(_imagePath!),
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.admin_panel_settings,
+                        size: 55,
+                        color: Colors.white,
+                      ),
               ),
-              child: const Icon(Icons.admin_panel_settings, size: 55, color: Colors.white),
             ),
             const SizedBox(height: 16),
-            
+
             // Nama Admin
-            const Text(
-              'Admin Roti 515',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Text(
+              _nama,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            
+
             // Email Admin
             Text(
-              'admin@roti515.com',
+              _email,
               style: TextStyle(fontSize: 13, color: AppColors.textHint),
             ),
             const SizedBox(height: 8),
-            
+
             // Role Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
@@ -55,27 +109,58 @@ class AdminProfileScreen extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                'Super Admin',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+              child: Text(
+                _pengurus,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
             ),
             const SizedBox(height: 40),
-            
+
             // Menu Edit Profile
             _buildMenuCard(
               icon: Icons.edit_outlined,
               title: 'Edit Profile',
               subtitle: 'Perbarui data diri Anda',
               iconColor: Colors.blue,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Fitur edit profile segera hadir')),
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditAdminProfileScreen(
+                      nama: _nama,
+                      pengurus: _pengurus,
+                      email: _email,
+                      imagePath: _imagePath,
+                    ),
+                  ),
                 );
+                if (result != null && mounted) {
+                  setState(() {
+                    if (result['nama'] != null && result['nama'].isNotEmpty) {
+                      _nama = result['nama'];
+                    }
+                    if (result['pengurus'] != null && result['pengurus'].isNotEmpty) {
+                      _pengurus = result['pengurus'];
+                    }
+                    if (result['image'] != null) {
+                      _imagePath = result['image'].path;
+                    }
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Profil berhasil diperbarui'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               },
             ),
             const SizedBox(height: 16),
-            
+
             // Menu Logout
             _buildMenuCard(
               icon: Icons.logout,
@@ -89,7 +174,9 @@ class AdminProfileScreen extends StatelessWidget {
                   builder: (_) => AlertDialog(
                     title: const Text('Konfirmasi Keluar'),
                     content: const Text('Apakah Anda yakin ingin keluar?'),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -100,7 +187,9 @@ class AdminProfileScreen extends StatelessWidget {
                           Navigator.pop(context);
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
                             (route) => false,
                           );
                         },
