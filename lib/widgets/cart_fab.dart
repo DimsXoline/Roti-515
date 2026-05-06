@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../screens/checkout/checkout_screen.dart';
-import '../models/products.dart';
+import '../models/product.dart';
 
 class CartFab extends StatelessWidget {
   final int itemCount;

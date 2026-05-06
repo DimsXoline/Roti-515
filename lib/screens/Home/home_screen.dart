@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/products.dart';
+import '../../models/product.dart';
+import '../../services/product_service.dart';
 import '../../../widgets/product_card.dart';
 import '../../../widgets/cart_fab.dart';
 import '../../../widgets/custom_search_bar.dart';
@@ -60,6 +61,7 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   List<Product> _products = [];
   bool _isLoading = true;
+  String? _error;
   int _cartCount = 0;
   final List<Product> _cartItems = [];
 
@@ -69,9 +71,18 @@ class _HomeContentState extends State<HomeContent> {
     _loadProducts();
   }
 
-  void _loadProducts() {
+  Future<void> _loadProducts() async {
     setState(() {
-      _products = Product.defaults;
+      _isLoading = true;
+      _error = null;
+    });
+
+    final products = await ProductService.getProducts();
+
+    setState(() {
+      // Kalau API berhasil, pakai data dari DB
+      // Kalau gagal (misal server mati), fallback ke dummy
+      _products = products.isNotEmpty ? products : Product.defaults;
       _isLoading = false;
     });
   }
@@ -82,38 +93,46 @@ class _HomeContentState extends State<HomeContent> {
       _cartItems.add(product);
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${product.nama} ditambahkan'), duration: const Duration(seconds: 1)),
+      SnackBar(
+        content: Text('${product.nama} ditambahkan'),
+        duration: const Duration(seconds: 1),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     int totalPrice = _cartItems.fold(0, (sum, item) => sum + item.harga.toInt());
-    
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildHeader(),
-              const CustomSearchBar(),
-              _buildBanner(),
-              const SectionTitle(title: 'Koleksi Kami', subtitle: 'Hari favoritmu dari panggang kami'),
-              _buildProductGrid(),
-              SectionTitle(
-                title: 'Paling Terlaris',
-                showLihatSemua: true,
-                onLihatSemua: () {
-                  final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                  homeState?.setState(() {
-                    homeState._currentIndex = 1;
-                  });
-                },
-              ),
-              _buildBestSellerGrid(),
-              const SizedBox(height: 80),
-            ],
+        child: RefreshIndicator(
+          onRefresh: _loadProducts,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                _buildHeader(),
+                const CustomSearchBar(),
+                _buildBanner(),
+                const SectionTitle(
+                  title: 'Koleksi Kami',
+                  subtitle: 'Hari favoritmu dari panggang kami',
+                ),
+                _buildProductGrid(),
+                SectionTitle(
+                  title: 'Paling Terlaris',
+                  showLihatSemua: true,
+                  onLihatSemua: () {
+                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                    homeState?.setState(() => homeState._currentIndex = 1);
+                  },
+                ),
+                _buildBestSellerGrid(),
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
         ),
       ),
@@ -136,29 +155,33 @@ class _HomeContentState extends State<HomeContent> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
+
   Widget _buildHeader() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        'ROTI 515',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: AppColors.primaryDark,
-          letterSpacing: 2,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          'ROTI 515',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryDark,
+            letterSpacing: 2,
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildBanner() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       height: 180,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: AppColors.primary),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: AppColors.primary,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
@@ -170,7 +193,12 @@ class _HomeContentState extends State<HomeContent> {
                 children: [
                   const Text(
                     'Kehangatan\nOtentik di\nSetiap Gigitan',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, height: 1.3),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.3,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
@@ -178,7 +206,9 @@ class _HomeContentState extends State<HomeContent> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                     ),
                     child: const Text('Pesan Sekarang', style: TextStyle(fontSize: 12)),
                   ),
@@ -194,9 +224,14 @@ class _HomeContentState extends State<HomeContent> {
 
   Widget _buildProductGrid() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
+
     final displayProducts = _products.take(4).toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
@@ -221,8 +256,10 @@ class _HomeContentState extends State<HomeContent> {
 
   Widget _buildBestSellerGrid() {
     if (_isLoading) return const SizedBox.shrink();
+
     final bestSellers = _products.where((p) => p.badge == 'BEST SELLER').toList();
     if (bestSellers.isEmpty) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(

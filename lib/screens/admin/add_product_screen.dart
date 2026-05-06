@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import '../../utils/app_colors.dart';
 import '../../models/product.dart';
+import '../../services/product_service.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -16,52 +19,101 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _hargaController = TextEditingController();
   final TextEditingController _stokController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
-  
+
   String _selectedKategori = 'ROTI';
   final List<String> _kategoriList = ['ROTI', 'PASTRI', 'CAKE', 'MINUMAN'];
-  
+
   File? _selectedImage;
+  Uint8List? _webImageBytes;
+  XFile? _pickedFile;
   final ImagePicker _picker = ImagePicker();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _hargaController.dispose();
+    _stokController.dispose();
+    _deskripsiController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
+      _pickedFile = image;
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() => _webImageBytes = bytes);
+      } else {
+        setState(() => _selectedImage = File(image.path));
+      }
     }
   }
 
-  void _saveProduct() {
+  Future<void> _saveProduct() async {
     if (_namaController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama produk wajib diisi')),
-      );
+      _showSnackBar('Nama produk wajib diisi', isError: true);
       return;
     }
-    
     if (_hargaController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harga wajib diisi')),
-      );
+      _showSnackBar('Harga wajib diisi', isError: true);
       return;
     }
 
-    // Simpan produk (nanti konek ke API)
-    final newProduct = Product(
-      id: DateTime.now().millisecondsSinceEpoch,
+    setState(() => _isLoading = true);
+
+    final result = await ProductService.addProduct(
       nama: _namaController.text,
-      deskripsi: _deskripsiController.text.isEmpty ? 'Deskripsi produk' : _deskripsiController.text,
       harga: double.tryParse(_hargaController.text) ?? 0,
+      deskripsi: _deskripsiController.text.isEmpty
+          ? 'Deskripsi produk'
+          : _deskripsiController.text,
+      kategori: _selectedKategori,
+      stok: int.tryParse(_stokController.text) ?? 0,
+      gambar: kIsWeb ? null : _selectedImage,
+      gambarBytes: kIsWeb ? _webImageBytes : null,
+      gambarNama: _pickedFile?.name,
     );
-    
-    // Kembali ke halaman sebelumnya dengan data
-    Navigator.pop(context, newProduct);
-    
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result['success'] == true) {
+      final newProduct = result['product'] != null
+          ? Product.fromJson(result['product'])
+          : Product(
+              nama: _namaController.text,
+              deskripsi: _deskripsiController.text,
+              harga: double.tryParse(_hargaController.text) ?? 0,
+              stok: int.tryParse(_stokController.text) ?? 0,
+              kategori: _selectedKategori,
+            );
+
+      Navigator.pop(context, newProduct);
+      _showSnackBar('Produk berhasil ditambahkan');
+    } else {
+      _showSnackBar(
+        result['message'] ?? 'Gagal menyimpan produk',
+        isError: true,
+      );
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Produk berhasil ditambahkan')),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
     );
   }
+
+  bool get _hasImage =>
+      kIsWeb ? _webImageBytes != null : _selectedImage != null;
 
   @override
   Widget build(BuildContext context) {
@@ -84,15 +136,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bagian Foto
             _buildPhotoSection(),
             const SizedBox(height: 24),
-            
-            // Form Produk
             _buildFormSection(),
             const SizedBox(height: 32),
-            
-            // Tombol Simpan
             _buildSaveButton(),
             const SizedBox(height: 40),
           ],
@@ -129,11 +176,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Format : 4:5 Potret.',
+            'Format: JPG, PNG, WEBP',
             style: TextStyle(fontSize: 11, color: AppColors.textHint),
           ),
           const SizedBox(height: 16),
-          // Preview Gambar
           Center(
             child: GestureDetector(
               onTap: _pickImage,
@@ -143,26 +189,74 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.toggleBg,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.textHint.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: _hasImage
+                        ? AppColors.primary
+                        : AppColors.textHint.withValues(alpha: 0.3),
+                    width: _hasImage ? 2 : 1,
+                  ),
                 ),
-                child: _selectedImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          _selectedImage!,
-                          width: 150,
-                          height: 180,
-                          fit: BoxFit.cover,
-                        ),
+                child: _hasImage
+                    ? Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: kIsWeb
+                                ? Image.memory(
+                                    _webImageBytes!,
+                                    width: 150,
+                                    height: 180,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.file(
+                                    _selectedImage!,
+                                    width: 150,
+                                    height: 180,
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.image_outlined, size: 40, color: AppColors.textHint),
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 48,
+                            color: AppColors.textHint,
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Pilih Gambar',
-                            style: TextStyle(color: AppColors.primary, fontSize: 12),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'JPG, PNG, WEBP',
+                            style: TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 10,
+                            ),
                           ),
                         ],
                       ),
@@ -191,32 +285,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Nama Produk
-          const Text(
-            'NAMA PRODUK',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textHint),
-          ),
+          _buildLabel('NAMA PRODUK'),
           const SizedBox(height: 6),
-          TextField(
-            controller: _namaController,
-            decoration: InputDecoration(
-              hintText: 'Roti Sobek, Sisir, Kopi...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: AppColors.inputBg,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
-          ),
+          _buildTextField(_namaController, 'Roti Sobek, Sisir, Kopi...'),
           const SizedBox(height: 16),
-          
-          // Kategori
-          const Text(
-            'KATEGORI',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textHint),
-          ),
+
+          _buildLabel('KATEGORI'),
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -228,88 +302,92 @@ class _AddProductScreenState extends State<AddProductScreen> {
               child: DropdownButton<String>(
                 value: _selectedKategori,
                 isExpanded: true,
-                items: _kategoriList.map((kategori) {
-                  return DropdownMenuItem(
-                    value: kategori,
-                    child: Text(kategori),
-                  );
+                items: _kategoriList.map((k) {
+                  return DropdownMenuItem(value: k, child: Text(k));
                 }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedKategori = value!;
-                  });
-                },
+                onChanged: (value) =>
+                    setState(() => _selectedKategori = value!),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          
-          // Harga
-          const Text(
-            'HARGA',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textHint),
-          ),
+
+          _buildLabel('HARGA'),
           const SizedBox(height: 6),
-          TextField(
-            controller: _hargaController,
+          _buildTextField(
+            _hargaController,
+            '0',
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              prefixText: 'Rp ',
-              hintText: '0.00',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: AppColors.inputBg,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
+            prefixText: 'Rp ',
           ),
           const SizedBox(height: 16),
-          
-          // Stok
-          const Text(
-            'STOK',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textHint),
-          ),
+
+          _buildLabel('STOK'),
           const SizedBox(height: 6),
-          TextField(
-            controller: _stokController,
+          _buildTextField(
+            _stokController,
+            '0',
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: '24 units',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: AppColors.inputBg,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
           ),
           const SizedBox(height: 16),
-          
-          // Deskripsi
-          const Text(
-            'DESKRIPSI',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textHint),
-          ),
+
+          _buildLabel('DESKRIPSI'),
           const SizedBox(height: 6),
           TextField(
             controller: _deskripsiController,
             maxLines: 4,
             decoration: InputDecoration(
-              hintText: 'Jelaskan profil rasa, proses fermentasi, dan bahan-bahan utama...',
+              hintText: 'Jelaskan profil rasa dan bahan-bahan utama...',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
               filled: true,
               fillColor: AppColors.inputBg,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textHint,
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint, {
+    TextInputType keyboardType = TextInputType.text,
+    String? prefixText,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixText: prefixText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: AppColors.inputBg,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -318,7 +396,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _saveProduct,
+        onPressed: _isLoading ? null : _saveProduct,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -327,10 +405,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: const Text(
-          'Simpan Produk',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'Simpan Produk',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
       ),
     );
   }

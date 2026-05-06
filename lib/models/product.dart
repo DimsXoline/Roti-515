@@ -4,8 +4,10 @@ class Product {
   final String deskripsi;
   final double harga;
   final int stok;
-  final String? imageUrl;
+  final String? gambar;
+  final String? gambarUrl;
   final String? kategori;
+  final String? badge;
 
   Product({
     this.id,
@@ -13,8 +15,10 @@ class Product {
     required this.deskripsi,
     required this.harga,
     this.stok = 0,
-    this.imageUrl,
+    this.gambar,
+    this.gambarUrl,
     this.kategori,
+    this.badge,
   });
 
   String get formattedPrice {
@@ -24,55 +28,55 @@ class Product {
   static List<Product> get defaults => [
     Product(
       id: 1,
-      nama: 'Roti Sobek Original',
-      deskripsi: 'Roti sobek lembut dengan isian vanilla klasik',
-      harga: 25000,
+      nama: 'ROTI SOBEK',
+      deskripsi:
+          'Satu loyang isi 6 potong. Tekstur empuk, isian penuh, dan manisnya pas.',
+      harga: 15000,
       stok: 24,
-      kategori: 'ROTI',
+      kategori: 'roti',
+      badge: 'BEST SELLER',
     ),
     Product(
       id: 2,
-      nama: 'Croissant Butter',
-      deskripsi: 'Croissant renyah dengan lapisan mentega pilihan',
-      harga: 18000,
+      nama: 'ROTI SISIR',
+      deskripsi:
+          'Teksturnya empuk dan mudah dilepas, sangat cocok jadi teman setia kopi atau teh Anda di pagi hari.',
+      harga: 15000,
       stok: 4,
-      kategori: 'PASTRI',
+      kategori: 'roti',
     ),
     Product(
       id: 3,
-      nama: 'Chiffon Cake Pandan',
-      deskripsi: 'Kue chiffon ringan dengan aroma pandan segar',
-      harga: 45000,
+      nama: 'ROTI KOPI',
+      deskripsi:
+          'Inovasi roti kopi yang disajikan dingin dengan tekstur super lembut seperti salju.',
+      harga: 10000,
       stok: 20,
-      kategori: 'CAKE',
+      kategori: 'roti',
     ),
     Product(
       id: 4,
-      nama: 'Milk Bun',
-      deskripsi: 'Roti susu Jepang yang super lembut dan fluffy',
-      harga: 20000,
+      nama: 'ROTI BAKAR BANDUNG',
+      deskripsi:
+          'Varian siap saji dengan isian cokelat klasik yang manis dan gurih.',
+      harga: 15000,
       stok: 12,
-      kategori: 'ROTI',
+      kategori: 'roti',
+      badge: 'BEST SELLER',
     ),
   ];
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
-      nama: json['nama'] ?? json['name'] ?? '',
-      deskripsi: json['deskripsi'] ?? json['description'] ?? '',
-      harga:
-          double.tryParse(
-            json['harga']?.toString() ?? json['price']?.toString() ?? '0',
-          ) ??
-          0,
-      stok:
-          int.tryParse(
-            json['stok']?.toString() ?? json['stock']?.toString() ?? '0',
-          ) ??
-          0,
-      imageUrl: json['image_url'] ?? json['gambar'],
-      kategori: json['kategori'] ?? json['category'],
+      nama: json['nama'] ?? '',
+      deskripsi: json['deskripsi'] ?? '',
+      harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
+      stok: int.tryParse(json['stok']?.toString() ?? '0') ?? 0,
+      gambar: json['gambar'],
+      gambarUrl: json['gambar_url'],
+      kategori: json['kategori'],
+      badge: json['badge'],
     );
   }
 
@@ -83,8 +87,9 @@ class Product {
       'deskripsi': deskripsi,
       'harga': harga,
       'stok': stok,
-      if (imageUrl != null) 'image_url': imageUrl,
+      if (gambar != null) 'gambar': gambar,
       if (kategori != null) 'kategori': kategori,
+      if (badge != null) 'badge': badge,
     };
   }
 }
