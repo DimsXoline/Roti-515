@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../../models/product.dart';
+import '../../services/product_service.dart';
 import 'add_product_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -12,7 +13,7 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   List<Product> _products = [];
-  List<int> _stocks = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -20,43 +21,73 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _loadProducts();
   }
 
-  void _loadProducts() {
+  Future<void> _loadProducts() async {
+    setState(() => _isLoading = true);
+    final products = await ProductService.getProducts();
     setState(() {
-      _products = List.from(Product.defaults);
-      _stocks = [24, 4, 20, 12];
+      _products = products;
+      _isLoading = false;
     });
   }
 
-  int get totalStok => _stocks.reduce((a, b) => a + b);
-  int get lowStock => _stocks.where((s) => s <= 5).length;
+  int get totalStok => _products.fold(0, (sum, p) => sum + p.stok);
+  int get lowStock => _products.where((p) => p.stok <= 5).length;
 
-  void _updateStock(int index, int delta) {
+  Future<void> _updateStock(Product product, int delta) async {
+    // Implement update stock via API jika ada
     setState(() {
-      int newStock = _stocks[index] + delta;
+      int newStock = product.stok + delta;
       if (newStock >= 0 && newStock <= 999) {
-        _stocks[index] = newStock;
+        final index = _products.indexWhere((p) => p.id == product.id);
+        if (index != -1) {
+          _products[index] = Product(
+            id: product.id,
+            nama: product.nama,
+            deskripsi: product.deskripsi,
+            harga: product.harga,
+            stok: newStock,
+            gambar: product.gambar,
+            gambarUrl: product.gambarUrl,
+            kategori: product.kategori,
+            badge: product.badge,
+          );
+        }
       }
     });
   }
 
-  void _deleteProduct(int index) {
+  Future<void> _deleteProduct(Product product) async {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Hapus Produk'),
-        content: Text('Apakah Anda yakin ingin menghapus ${_products[index].nama}?'),
+        content: Text('Apakah Anda yakin ingin menghapus ${product.nama}?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _products.removeAt(index);
-                _stocks.removeAt(index);
-              });
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Produk berhasil dihapus')),
-              );
+              
+              if (product.id != null) {
+                final result = await ProductService.deleteProduct(product.id!);
+                if (result['success'] == true) {
+                  _loadProducts();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Produk berhasil dihapus')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(result['message'] ?? 'Gagal hapus produk')),
+                  );
+                }
+              } else {
+                setState(() {
+                  _products.remove(product);
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Produk berhasil dihapus')),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Hapus'),
@@ -70,74 +101,80 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            const Text(
-              'Manajemen Produk',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Kelola stok dan produk roti Anda',
-              style: TextStyle(fontSize: 14, color: AppColors.textHint),
-            ),
-            const SizedBox(height: 24),
-            
-            // Stock Card
-            _buildStockCard(),
-            const SizedBox(height: 20),
-            
-            // Tombol Tambah Produk
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddProductScreen()),
-                  );
-                  if (result != null) {
-                    setState(() {
-                      _products.add(result);
-                      _stocks.add(0);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Produk berhasil ditambahkan')),
+      body: RefreshIndicator(
+        onRefresh: _loadProducts,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Manajemen Produk',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Kelola stok dan produk roti Anda',
+                style: TextStyle(fontSize: 14, color: AppColors.textHint),
+              ),
+              const SizedBox(height: 24),
+              
+              _buildStockCard(),
+              const SizedBox(height: 20),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddProductScreen()),
                     );
-                  }
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Tambah Produk Baru'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    if (result != null) {
+                      _loadProducts();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Produk berhasil ditambahkan')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Tambah Produk Baru'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Daftar Produk
-            const Text(
-              'Daftar Produk',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            
-            // List Produk
-            ..._products.asMap().entries.map((entry) {
-              int index = entry.key;
-              Product product = entry.value;
-              int stock = index < _stocks.length ? _stocks[index] : 0;
-              bool isLowStock = stock <= 5;
-              return _buildProductItem(product, stock, isLowStock, index);
-            }),
-          ],
+              const SizedBox(height: 20),
+              
+              const Text(
+                'Daftar Produk',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (_products.isEmpty)
+                Center(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 50),
+                      Icon(Icons.inventory, size: 64, color: AppColors.textHint),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada produk',
+                        style: TextStyle(color: AppColors.textHint),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ..._products.map((product) => _buildProductItem(product)),
+            ],
+          ),
         ),
       ),
     );
@@ -211,7 +248,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _buildProductItem(Product product, int stock, bool isLowStock, int index) {
+  Widget _buildProductItem(Product product) {
+    bool isLowStock = product.stok <= 5;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -234,7 +273,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
               Row(
                 children: [
-                  // Tombol Edit
                   IconButton(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -243,9 +281,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     },
                     icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
                   ),
-                  // Tombol Hapus
                   IconButton(
-                    onPressed: () => _deleteProduct(index),
+                    onPressed: () => _deleteProduct(product),
                     icon: const Icon(Icons.delete, size: 20, color: Colors.red),
                   ),
                 ],
@@ -285,20 +322,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          // Tombol +/-
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _buildStockButton(Icons.remove, () => _updateStock(index, -1)),
+              _buildStockButton(Icons.remove, () => _updateStock(product, -1)),
               Container(
                 width: 50,
                 alignment: Alignment.center,
                 child: Text(
-                  '$stock',
+                  '${product.stok}',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-              _buildStockButton(Icons.add, () => _updateStock(index, 1)),
+              _buildStockButton(Icons.add, () => _updateStock(product, 1)),
             ],
           ),
         ],

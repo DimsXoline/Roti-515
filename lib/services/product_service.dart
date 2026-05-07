@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import '../models/product.dart';
 
 class ProductService {
-  static const String _baseUrl = 'http://localhost/roti-515/roti_515_api';
+  // PERBAIKAN: Pastikan baseUrl sesuai
+  static const String _baseUrl = 'http://localhost/roti_515_api';
 
   // ========== GET ALL PRODUCTS ==========
   static Future<List<Product>> getProducts() async {
@@ -19,12 +20,12 @@ class ProductService {
       }
       return [];
     } catch (e) {
+      print('Error getProducts: $e');
       return [];
     }
   }
 
   // ========== ADD PRODUCT + UPLOAD FOTO ==========
-  // Support mobile (File) dan web (Uint8List bytes)
   static Future<Map<String, dynamic>> addProduct({
     required String nama,
     required double harga,
@@ -32,9 +33,9 @@ class ProductService {
     required String kategori,
     required int stok,
     String? badge,
-    File? gambar, // untuk mobile
-    Uint8List? gambarBytes, // untuk web
-    String? gambarNama, // nama file untuk web
+    File? gambar,
+    Uint8List? gambarBytes,
+    String? gambarNama,
   }) async {
     try {
       final request = http.MultipartRequest(
@@ -49,7 +50,7 @@ class ProductService {
       request.fields['stok'] = stok.toString();
       if (badge != null) request.fields['badge'] = badge;
 
-      // Upload gambar — mobile pakai File, web pakai bytes
+      // Upload gambar
       if (gambar != null) {
         request.files.add(
           await http.MultipartFile.fromPath('gambar', gambar.path),
@@ -66,9 +67,14 @@ class ProductService {
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
+      
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      
       return jsonDecode(response.body);
     } catch (e) {
-      return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
+      print('Error addProduct: $e');
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server: $e'};
     }
   }
 

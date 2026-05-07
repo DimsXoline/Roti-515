@@ -42,9 +42,21 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textHint,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view_outlined), activeIcon: Icon(Icons.grid_view), label: 'Produk'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.grid_view_outlined),
+            activeIcon: Icon(Icons.grid_view),
+            label: 'Produk',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profil',
+          ),
         ],
       ),
     );
@@ -60,10 +72,13 @@ class HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<HomeContent> {
   List<Product> _products = [];
+  List<Product> _bestSellers = [];
+  List<Product> _allProducts = []; // Untuk menyimpan semua produk (keperluan search)
   bool _isLoading = true;
-  String? _error;
   int _cartCount = 0;
   final List<Product> _cartItems = [];
+  
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -71,19 +86,37 @@ class _HomeContentState extends State<HomeContent> {
     _loadProducts();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // LOAD PRODUK DARI DATABASE
   Future<void> _loadProducts() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
+    setState(() => _isLoading = true);
+    
     final products = await ProductService.getProducts();
-
+    
     setState(() {
-      // Kalau API berhasil, pakai data dari DB
-      // Kalau gagal (misal server mati), fallback ke dummy
-      _products = products.isNotEmpty ? products : Product.defaults;
+      _allProducts = products;
+      _products = products;
+      _bestSellers = products.where((p) => p.badge == 'BEST SELLER').toList();
       _isLoading = false;
+    });
+  }
+
+  // SEARCH PRODUK
+  void _searchProducts(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _products = _allProducts;
+      } else {
+        _products = _allProducts.where((product) {
+          return product.nama.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
+      _bestSellers = _products.where((p) => p.badge == 'BEST SELLER').toList();
     });
   }
 
@@ -96,6 +129,7 @@ class _HomeContentState extends State<HomeContent> {
       SnackBar(
         content: Text('${product.nama} ditambahkan'),
         duration: const Duration(seconds: 1),
+        backgroundColor: Colors.green,
       ),
     );
   }
@@ -107,32 +141,31 @@ class _HomeContentState extends State<HomeContent> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadProducts,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                _buildHeader(),
-                const CustomSearchBar(),
-                _buildBanner(),
-                const SectionTitle(
-                  title: 'Koleksi Kami',
-                  subtitle: 'Hari favoritmu dari panggang kami',
-                ),
-                _buildProductGrid(),
-                SectionTitle(
-                  title: 'Paling Terlaris',
-                  showLihatSemua: true,
-                  onLihatSemua: () {
-                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                    homeState?.setState(() => homeState._currentIndex = 1);
-                  },
-                ),
-                _buildBestSellerGrid(),
-                const SizedBox(height: 80),
-              ],
-            ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildHeader(),
+              CustomSearchBar(
+                controller: _searchController,
+                onChanged: _searchProducts,
+              ),
+              _buildBanner(),
+              const SectionTitle(
+                title: 'Koleksi Kami',
+                subtitle: 'Hari favoritmu dari panggang kami',
+              ),
+              _buildProductGrid(),
+              SectionTitle(
+                title: 'Paling Terlaris',
+                showLihatSemua: true,
+                onLihatSemua: () {
+                  final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                  homeState?.setState(() => homeState._currentIndex = 1);
+                },
+              ),
+              _buildBestSellerGrid(),
+              const SizedBox(height: 80),
+            ],
           ),
         ),
       ),
@@ -202,7 +235,10 @@ class _HomeContentState extends State<HomeContent> {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                      homeState?.setState(() => homeState._currentIndex = 1);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.primary,
@@ -232,6 +268,22 @@ class _HomeContentState extends State<HomeContent> {
 
     final displayProducts = _products.take(4).toList();
 
+    if (displayProducts.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Icon(Icons.search_off, size: 64, color: AppColors.textHint),
+            const SizedBox(height: 16),
+            Text(
+              'Produk tidak ditemukan',
+              style: TextStyle(fontSize: 16, color: AppColors.textHint),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
@@ -257,8 +309,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget _buildBestSellerGrid() {
     if (_isLoading) return const SizedBox.shrink();
 
-    final bestSellers = _products.where((p) => p.badge == 'BEST SELLER').toList();
-    if (bestSellers.isEmpty) return const SizedBox.shrink();
+    if (_bestSellers.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -271,11 +322,11 @@ class _HomeContentState extends State<HomeContent> {
           mainAxisSpacing: 12,
           childAspectRatio: 0.7,
         ),
-        itemCount: bestSellers.length,
+        itemCount: _bestSellers.length,
         itemBuilder: (context, index) {
           return ProductCard(
-            product: bestSellers[index],
-            onAddToCart: () => _addToCart(bestSellers[index]),
+            product: _bestSellers[index],
+            onAddToCart: () => _addToCart(_bestSellers[index]),
           );
         },
       ),

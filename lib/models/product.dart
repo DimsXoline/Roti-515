@@ -28,38 +28,34 @@ class Product {
   static List<Product> get defaults => [
     Product(
       id: 1,
-      nama: 'ROTI SOBEK',
-      deskripsi:
-          'Satu loyang isi 6 potong. Tekstur empuk, isian penuh, dan manisnya pas.',
-      harga: 15000,
+      nama: 'MARIE WIJEN',
+      deskripsi: 'Satu loyang isi 6 potong. Tekstur empuk, isian penuh, dan manisnya pas.',
+      harga: 28.000,
       stok: 24,
       kategori: 'roti',
       badge: 'BEST SELLER',
     ),
     Product(
       id: 2,
-      nama: 'ROTI SISIR',
-      deskripsi:
-          'Teksturnya empuk dan mudah dilepas, sangat cocok jadi teman setia kopi atau teh Anda di pagi hari.',
-      harga: 15000,
+      nama: 'ROTI BOLO KERING',
+      deskripsi: 'Teksturnya empuk dan mudah dilepas, sangat cocok jadi teman setia kopi atau teh Anda di pagi hari.',
+      harga:28.000,
       stok: 4,
       kategori: 'roti',
     ),
     Product(
       id: 3,
-      nama: 'ROTI KOPI',
-      deskripsi:
-          'Inovasi roti kopi yang disajikan dingin dengan tekstur super lembut seperti salju.',
-      harga: 10000,
+      nama: 'ONDE ONDE KETAWA',
+      deskripsi: 'Inovasi roti kopi yang disajikan dingin dengan tekstur super lembut seperti salju.',
+      harga: 28.000,
       stok: 20,
       kategori: 'roti',
     ),
     Product(
       id: 4,
-      nama: 'ROTI BAKAR BANDUNG',
-      deskripsi:
-          'Varian siap saji dengan isian cokelat klasik yang manis dan gurih.',
-      harga: 15000,
+      nama: 'PIA KACANG',
+      deskripsi: 'Varian siap saji dengan isian cokelat klasik yang manis dan gurih.',
+      harga: 28.000,
       stok: 12,
       kategori: 'roti',
       badge: 'BEST SELLER',

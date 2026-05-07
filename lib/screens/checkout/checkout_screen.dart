@@ -25,7 +25,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _cartItems = widget.cartItems;
+    // PENTING: Copy list agar bisa diubah (dihapus)
+    _cartItems = List.from(widget.cartItems);
     _quantities = List.generate(_cartItems.length, (index) => 1);
   }
 
@@ -54,8 +55,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Hapus Item'),
         content: Text('Hapus ${_cartItems[index].nama} dari keranjang?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
           TextButton(
             onPressed: () {
               setState(() {
@@ -63,8 +70,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 _quantities.removeAt(index);
               });
               Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Item berhasil dihapus'),
+                  duration: Duration(seconds: 1),
+                  backgroundColor: Colors.green,
+                ),
+              );
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
             child: const Text('Hapus'),
           ),
         ],
@@ -72,7 +88,55 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  void _removeAllItems() {
+    if (_cartItems.isEmpty) return;
+    
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Hapus Semua Item'),
+        content: const Text('Apakah Anda yakin ingin menghapus semua item dari keranjang?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _cartItems.clear();
+                _quantities.clear();
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Semua item dihapus'),
+                  duration: Duration(seconds: 1),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Hapus Semua'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _processCheckout() async {
+    if (_cartItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Keranjang belanja kosong')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
@@ -108,10 +172,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         title: const Text('Checkout', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primary,
         centerTitle: true,
+        elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white),
         ),
+        actions: [
+          if (_cartItems.isNotEmpty)
+            TextButton.icon(
+              onPressed: _removeAllItems,
+              icon: const Icon(Icons.delete_sweep, color: Colors.white, size: 20),
+              label: const Text(
+                'Hapus Semua',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+        ],
       ),
       body: _cartItems.isEmpty
           ? _buildEmptyCart()
@@ -147,11 +223,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         children: [
           Icon(Icons.shopping_cart_outlined, size: 80, color: AppColors.textHint),
           const SizedBox(height: 16),
-          Text('Keranjang belanja kosong', style: TextStyle(color: AppColors.textHint)),
-          const SizedBox(height: 16),
+          Text(
+            'Keranjang belanja kosong',
+            style: TextStyle(fontSize: 16, color: AppColors.textHint),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Yuk, pesan roti favoritmu!',
+            style: TextStyle(fontSize: 12, color: AppColors.textHint),
+          ),
+          const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: const Text('Kembali Belanja'),
           ),
         ],
@@ -163,8 +253,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text('Daftar Pesanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Text('${_cartItems.length} item', style: TextStyle(fontSize: 12, color: AppColors.textHint)),
+        const Text(
+          'Daftar Pesanan',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          '${_cartItems.length} item',
+          style: TextStyle(fontSize: 12, color: AppColors.textHint),
+        ),
       ],
     );
   }
@@ -173,6 +269,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     List<Widget> items = [];
     for (int i = 0; i < _cartItems.length; i++) {
       items.add(_buildProductItem(i));
+      if (i < _cartItems.length - 1) {
+        items.add(const SizedBox(height: 12));
+      }
     }
     return items;
   }
@@ -180,7 +279,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _buildProductItem(int index) {
     final product = _cartItems[index];
     final quantity = _quantities[index];
-    final totalPrice = product.harga.toInt() * quantity;
+    final totalPrice = (product.harga * quantity).toInt();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -188,7 +287,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -212,7 +317,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Expanded(
                       child: Text(
                         product.nama,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     GestureDetector(
@@ -241,21 +351,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     Text(
                       _formatPrice(totalPrice),
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                     Row(
                       children: [
-                        _buildQuantityButton(Icons.remove, () => _updateQuantity(index, -1), AppColors.toggleBg),
-                        SizedBox(
+                        _buildQuantityButton(
+                          Icons.remove,
+                          () => _updateQuantity(index, -1),
+                          AppColors.toggleBg,
+                        ),
+                        Container(
                           width: 40,
-                          child: Center(
-                            child: Text(
-                              '$quantity',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$quantity',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        _buildQuantityButton(Icons.add, () => _updateQuantity(index, 1), AppColors.primary),
+                        _buildQuantityButton(
+                          Icons.add,
+                          () => _updateQuantity(index, 1),
+                          AppColors.primary,
+                        ),
                       ],
                     ),
                   ],
@@ -269,14 +393,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildQuantityButton(IconData icon, VoidCallback onTap, Color bgColor) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        onPressed: onTap,
-        icon: Icon(icon, size: 16, color: bgColor == AppColors.primary ? Colors.white : Colors.black54),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: bgColor == AppColors.primary ? Colors.white : Colors.black54,
+        ),
       ),
     );
   }
@@ -287,18 +417,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Ambil di Toko', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'Ambil di Toko',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: AppColors.toggleBg, borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(
+                  color: AppColors.toggleBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: const Icon(Icons.store_outlined, color: AppColors.primary, size: 24),
               ),
               const SizedBox(width: 12),
@@ -306,15 +448,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('ROTI 515 - Toko Roti', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                    const Text(
+                      'ROTI 515 - Toko Roti',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Kauman, Kec. Nganjuk, Kabupaten Nganjuk, Jawa Timur', style: TextStyle(fontSize: 12, color: AppColors.textHint)),
+                    Text(
+                      'Kauman, Kec. Nganjuk, Kabupaten Nganjuk, Jawa Timur',
+                      style: TextStyle(fontSize: 12, color: AppColors.textHint),
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.access_time, size: 14, color: Colors.green),
                         const SizedBox(width: 4),
-                        Text('Siap dalam 20-30 menit', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w500)),
+                        Text(
+                          'Siap dalam 20-30 menit',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -322,8 +477,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-                child: const Text('Tersedia', style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Tersedia',
+                  style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -338,12 +499,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Metode Pembayaran', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'Metode Pembayaran',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -356,7 +526,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: const Icon(Icons.monetization_on_outlined, size: 20, color: Colors.white),
                 ),
                 const SizedBox(width: 12),
@@ -371,8 +544,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                  child: const Text('Berlaku', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'Berlaku',
+                    style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -383,18 +562,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildOrderSummary() {
-    int totalItems = _quantities.reduce((a, b) => a + b);
+    int totalItems = 0;
+    for (int qty in _quantities) {
+      totalItems += qty;
+    }
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Ringkasan Pesanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'Ringkasan Pesanan',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           _buildSummaryRow('Subtotal ($totalItems item)', _formatPrice(subtotal)),
           const SizedBox(height: 10),
@@ -406,7 +598,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Text(_formatPrice(total), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              Text(
+                _formatPrice(total),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
+              ),
             ],
           ),
         ],
@@ -418,8 +613,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: isGreen ? Colors.green : AppColors.textHint, fontSize: 14)),
-        Text(value, style: TextStyle(color: isGreen ? Colors.green : Colors.black87, fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: TextStyle(
+            color: isGreen ? Colors.green : AppColors.textHint,
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: isGreen ? Colors.green : Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -433,7 +641,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
         child: SizedBox(
           width: double.infinity,
@@ -441,17 +655,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             onPressed: _isLoading ? null : _processCheckout,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: _isLoading
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))
-                : const Row(
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.lock_outline, size: 18),
-                      SizedBox(width: 8),
-                      Text('TERIMA KASIH', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Icon(Icons.lock_outline, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'TERIMA KASIH (${_formatPrice(total)})',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
           ),
