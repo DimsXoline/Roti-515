@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import '../models/product.dart';
 
 class ProductService {
-  // PERBAIKAN: Pastikan baseUrl sesuai
   static const String _baseUrl = 'http://localhost/roti_515_api';
 
   // ========== GET ALL PRODUCTS ==========
@@ -50,7 +49,6 @@ class ProductService {
       request.fields['stok'] = stok.toString();
       if (badge != null) request.fields['badge'] = badge;
 
-      // Upload gambar
       if (gambar != null) {
         request.files.add(
           await http.MultipartFile.fromPath('gambar', gambar.path),
@@ -68,12 +66,95 @@ class ProductService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-      
+      print('Add response: ${response.body}');
       return jsonDecode(response.body);
     } catch (e) {
       print('Error addProduct: $e');
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server: $e'};
+    }
+  }
+
+  // ========== UPDATE PRODUCT (TANPA GAMBAR) ==========
+  static Future<Map<String, dynamic>> updateProduct({
+    required int id,
+    required String nama,
+    required double harga,
+    required String deskripsi,
+    required String kategori,
+    required int stok,
+    String? badge,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/update_product.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'id': id,
+          'nama': nama,
+          'harga': harga,
+          'deskripsi': deskripsi,
+          'kategori': kategori,
+          'stok': stok,
+          'badge': badge,
+        }),
+      );
+      
+      print('Update response: ${response.body}');
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error updateProduct: $e');
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server: $e'};
+    }
+  }
+
+  // ========== UPDATE PRODUCT + GAMBAR ==========
+  static Future<Map<String, dynamic>> updateProductImage({
+    required int id,
+    required String nama,
+    required double harga,
+    required String deskripsi,
+    required String kategori,
+    required int stok,
+    String? badge,
+    File? gambar,
+    Uint8List? gambarBytes,
+    String? gambarNama,
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/update_product_image.php'),
+      );
+
+      request.fields['id'] = id.toString();
+      request.fields['nama'] = nama;
+      request.fields['harga'] = harga.toString();
+      request.fields['deskripsi'] = deskripsi;
+      request.fields['kategori'] = kategori;
+      request.fields['stok'] = stok.toString();
+      if (badge != null) request.fields['badge'] = badge;
+
+      if (gambar != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('gambar', gambar.path),
+        );
+      } else if (gambarBytes != null && gambarNama != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'gambar',
+            gambarBytes,
+            filename: gambarNama,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('Update product image response: ${response.body}');
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error updateProductImage: $e');
       return {'success': false, 'message': 'Tidak dapat terhubung ke server: $e'};
     }
   }

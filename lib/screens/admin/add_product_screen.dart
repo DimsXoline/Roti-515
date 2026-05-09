@@ -20,8 +20,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _stokController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
 
-  String _selectedKategori = 'ROTI';
-  final List<String> _kategoriList = ['ROTI', 'PASTRI', 'CAKE', 'MINUMAN'];
+  // PERBAIKAN: Gunakan huruf kecil agar konsisten dengan database
+  String _selectedKategori = 'roti';
+  final List<String> _kategoriList = ['roti', 'pastri', 'cake', 'minuman'];
 
   File? _selectedImage;
   Uint8List? _webImageBytes;
@@ -114,6 +115,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   bool get _hasImage =>
       kIsWeb ? _webImageBytes != null : _selectedImage != null;
+
+  // Fungsi untuk menampilkan kategori dalam huruf besar
+  String _getDisplayKategori(String kategori) {
+    switch (kategori) {
+      case 'roti': return 'ROTI';
+      case 'pastri': return 'PASTRI';
+      case 'cake': return 'CAKE';
+      case 'minuman': return 'MINUMAN';
+      default: return kategori.toUpperCase();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +315,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 value: _selectedKategori,
                 isExpanded: true,
                 items: _kategoriList.map((k) {
-                  return DropdownMenuItem(value: k, child: Text(k));
+                  return DropdownMenuItem(
+                    value: k,
+                    child: Text(_getDisplayKategori(k)),
+                  );
                 }).toList(),
                 onChanged: (value) =>
                     setState(() => _selectedKategori = value!),

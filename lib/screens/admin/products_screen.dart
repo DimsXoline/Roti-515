@@ -3,6 +3,7 @@ import '../../utils/app_colors.dart';
 import '../../models/product.dart';
 import '../../services/product_service.dart';
 import 'add_product_screen.dart';
+import 'edit_product_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -34,26 +35,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
   int get lowStock => _products.where((p) => p.stok <= 5).length;
 
   Future<void> _updateStock(Product product, int delta) async {
-    // Implement update stock via API jika ada
-    setState(() {
-      int newStock = product.stok + delta;
-      if (newStock >= 0 && newStock <= 999) {
-        final index = _products.indexWhere((p) => p.id == product.id);
-        if (index != -1) {
-          _products[index] = Product(
-            id: product.id,
-            nama: product.nama,
-            deskripsi: product.deskripsi,
-            harga: product.harga,
-            stok: newStock,
-            gambar: product.gambar,
-            gambarUrl: product.gambarUrl,
-            kategori: product.kategori,
-            badge: product.badge,
-          );
-        }
+    final newStock = product.stok + delta;
+    if (newStock >= 0 && newStock <= 999) {
+      final result = await ProductService.updateProduct(
+        id: product.id!,
+        nama: product.nama,
+        harga: product.harga,
+        deskripsi: product.deskripsi,
+        kategori: product.kategori ?? 'roti',
+        stok: newStock,
+        badge: product.badge,
+      );
+      if (result['success'] == true) {
+        _loadProducts();
       }
-    });
+    }
   }
 
   Future<void> _deleteProduct(Product product) async {
@@ -274,10 +270,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Fitur edit segera hadir')),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditProductScreen(product: product),
+                        ),
                       );
+                      if (result != null) {
+                        _loadProducts();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Produk berhasil diperbarui')),
+                        );
+                      }
                     },
                     icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
                   ),
