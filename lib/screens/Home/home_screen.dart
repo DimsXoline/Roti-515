@@ -9,6 +9,7 @@ import '../../../utils/app_colors.dart';
 import 'product_screen.dart';
 import '../profile/profile_screen.dart';
 import '../checkout/checkout_screen.dart';
+import 'notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -73,11 +74,13 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   List<Product> _products = [];
   List<Product> _bestSellers = [];
-  List<Product> _allProducts = []; // Untuk menyimpan semua produk (keperluan search)
+  List<Product> _allProducts =
+      []; // Untuk menyimpan semua produk (keperluan search)
   bool _isLoading = true;
   int _cartCount = 0;
   final List<Product> _cartItems = [];
-  
+  int _notifCount = 3; // ganti angka ini sesuai jumlah notifikasi
+
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -95,9 +98,9 @@ class _HomeContentState extends State<HomeContent> {
   // LOAD PRODUK DARI DATABASE
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
-    
+
     final products = await ProductService.getProducts();
-    
+
     setState(() {
       _allProducts = products;
       _products = products;
@@ -136,7 +139,10 @@ class _HomeContentState extends State<HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    int totalPrice = _cartItems.fold(0, (sum, item) => sum + item.harga.toInt());
+    int totalPrice = _cartItems.fold(
+      0,
+      (sum, item) => sum + item.harga.toInt(),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -159,7 +165,8 @@ class _HomeContentState extends State<HomeContent> {
                 title: 'Paling Terlaris',
                 showLihatSemua: true,
                 onLihatSemua: () {
-                  final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                  final homeState = context
+                      .findAncestorStateOfType<_HomeScreenState>();
                   homeState?.setState(() => homeState._currentIndex = 1);
                 },
               ),
@@ -192,17 +199,62 @@ class _HomeContentState extends State<HomeContent> {
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          'ROTI 515',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryDark,
-            letterSpacing: 2,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'ROTI 515',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryDark,
+              letterSpacing: 2,
+            ),
           ),
-        ),
+          // ── Ikon notifikasi dengan badge ──
+          GestureDetector(
+            onTap: () {
+              setState(() => _notifCount = 0); // tandai sudah dibaca
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+              );
+            },
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.notifications_outlined,
+                  size: 26,
+                  color: AppColors.primaryDark,
+                ),
+                if (_notifCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      width: 17,
+                      height: 17,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          _notifCount > 9 ? '9+' : '$_notifCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -236,7 +288,8 @@ class _HomeContentState extends State<HomeContent> {
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () {
-                      final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                      final homeState = context
+                          .findAncestorStateOfType<_HomeScreenState>();
                       homeState?.setState(() => homeState._currentIndex = 1);
                     },
                     style: ElevatedButton.styleFrom(
@@ -246,7 +299,10 @@ class _HomeContentState extends State<HomeContent> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    child: const Text('Pesan Sekarang', style: TextStyle(fontSize: 12)),
+                    child: const Text(
+                      'Pesan Sekarang',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                 ],
               ),
