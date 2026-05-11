@@ -1,7 +1,7 @@
 class Product {
   final int? id;
   final String nama;
-  final String deskripsi;
+  final String? deskripsi; // nullable, karena database bisa null
   final double harga;
   final int stok;
   final String? gambar;
@@ -12,7 +12,7 @@ class Product {
   Product({
     this.id,
     required this.nama,
-    required this.deskripsi,
+    this.deskripsi,
     required this.harga,
     this.stok = 0,
     this.gambar,
@@ -29,8 +29,9 @@ class Product {
     Product(
       id: 1,
       nama: 'MARIE WIJEN',
-      deskripsi: 'Satu loyang isi 6 potong. Tekstur empuk, isian penuh, dan manisnya pas.',
-      harga: 28.000,
+      deskripsi:
+          'Satu loyang isi 6 potong. Tekstur empuk, isian penuh, dan manisnya pas.',
+      harga: 28000,
       stok: 24,
       kategori: 'roti',
       badge: 'BEST SELLER',
@@ -38,24 +39,27 @@ class Product {
     Product(
       id: 2,
       nama: 'ROTI BOLO KERING',
-      deskripsi: 'Teksturnya empuk dan mudah dilepas, sangat cocok jadi teman setia kopi atau teh Anda di pagi hari.',
-      harga:28.000,
+      deskripsi:
+          'Teksturnya empuk dan mudah dilepas, sangat cocok jadi teman setia kopi atau teh Anda di pagi hari.',
+      harga: 28000,
       stok: 4,
       kategori: 'roti',
     ),
     Product(
       id: 3,
       nama: 'ONDE ONDE KETAWA',
-      deskripsi: 'Inovasi roti kopi yang disajikan dingin dengan tekstur super lembut seperti salju.',
-      harga: 28.000,
+      deskripsi:
+          'Inovasi roti kopi yang disajikan dingin dengan tekstur super lembut seperti salju.',
+      harga: 28000,
       stok: 20,
       kategori: 'roti',
     ),
     Product(
       id: 4,
       nama: 'PIA KACANG',
-      deskripsi: 'Varian siap saji dengan isian cokelat klasik yang manis dan gurih.',
-      harga: 28.000,
+      deskripsi:
+          'Varian siap saji dengan isian cokelat klasik yang manis dan gurih.',
+      harga: 28000,
       stok: 12,
       kategori: 'roti',
       badge: 'BEST SELLER',
@@ -66,7 +70,7 @@ class Product {
     return Product(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
       nama: json['nama'] ?? '',
-      deskripsi: json['deskripsi'] ?? '',
+      deskripsi: json['deskripsi'], // biarkan null kalau memang null
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
       stok: int.tryParse(json['stok']?.toString() ?? '0') ?? 0,
       gambar: json['gambar'],
@@ -80,7 +84,7 @@ class Product {
     return {
       if (id != null) 'id': id,
       'nama': nama,
-      'deskripsi': deskripsi,
+      'deskripsi': deskripsi ?? '',
       'harga': harga,
       'stok': stok,
       if (gambar != null) 'gambar': gambar,

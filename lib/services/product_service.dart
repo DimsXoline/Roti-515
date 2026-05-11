@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import '../models/product.dart';
 
 class ProductService {
-  static const String _baseUrl = 'http://localhost/roti_515_api';
+  // Gunakan 10.0.2.2 untuk Android emulator, localhost untuk web/iOS
+  static const String _baseUrl = 'http://10.0.2.2/roti_515_api';
 
   // ========== GET ALL PRODUCTS ==========
   static Future<List<Product>> getProducts() async {
@@ -65,12 +66,15 @@ class ProductService {
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       print('Add response: ${response.body}');
       return jsonDecode(response.body);
     } catch (e) {
       print('Error addProduct: $e');
-      return {'success': false, 'message': 'Tidak dapat terhubung ke server: $e'};
+      return {
+        'success': false,
+        'message': 'Tidak dapat terhubung ke server: $e',
+      };
     }
   }
 
@@ -98,12 +102,15 @@ class ProductService {
           'badge': badge,
         }),
       );
-      
+
       print('Update response: ${response.body}');
       return jsonDecode(response.body);
     } catch (e) {
       print('Error updateProduct: $e');
-      return {'success': false, 'message': 'Tidak dapat terhubung ke server: $e'};
+      return {
+        'success': false,
+        'message': 'Tidak dapat terhubung ke server: $e',
+      };
     }
   }
 
@@ -150,12 +157,15 @@ class ProductService {
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       print('Update product image response: ${response.body}');
       return jsonDecode(response.body);
     } catch (e) {
       print('Error updateProductImage: $e');
-      return {'success': false, 'message': 'Tidak dapat terhubung ke server: $e'};
+      return {
+        'success': false,
+        'message': 'Tidak dapat terhubung ke server: $e',
+      };
     }
   }
 
