@@ -6,11 +6,13 @@ import '../profile/order_history_screen.dart';
 class OrderConfirmationScreen extends StatelessWidget {
   final int totalAmount;
   final List<Map<String, dynamic>> orderItems;
+  final String? orderNumber;
 
   const OrderConfirmationScreen({
     super.key,
     required this.totalAmount,
     required this.orderItems,
+    this.orderNumber,
   });
 
   String _formatPrice(int price) {
@@ -66,6 +68,13 @@ class OrderConfirmationScreen extends StatelessWidget {
           const Text('TERIMA KASIH', style: TextStyle(fontSize: 14, color: Colors.white70, letterSpacing: 2)),
           const SizedBox(height: 8),
           Text('Pesanan Anda sedang dipersiapkan dengan cermat.', style: TextStyle(fontSize: 12, color: Colors.white60)),
+          if (orderNumber != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Order ID: $orderNumber',
+              style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.bold),
+            ),
+          ],
         ],
       ),
     );

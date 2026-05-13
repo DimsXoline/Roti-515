@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import '../screens/checkout/checkout_screen.dart';
 import '../models/product.dart';
+import '../screens/checkout/checkout_screen.dart';
 
 class CartFab extends StatelessWidget {
   final int itemCount;
+  final List<Product> cartItems;
+  final int totalPrice;
   final VoidCallback onTap;
 
-  const CartFab({super.key, required this.itemCount, required this.onTap});
+  const CartFab({
+    super.key,
+    required this.itemCount,
+    required this.cartItems,
+    required this.totalPrice,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,18 +27,23 @@ class CartFab extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 3))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: IconButton(
             onPressed: () {
               if (itemCount > 0) {
-                // Langsung ke halaman checkout
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => CheckoutScreen(
-                      cartItems: Product.defaults,
-                      totalAmount: 40000,
+                      cartItems: cartItems,
+                      totalAmount: totalPrice,
                     ),
                   ),
                 );

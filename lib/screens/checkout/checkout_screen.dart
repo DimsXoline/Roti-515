@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../../models/product.dart';
+import '../../services/auth_service.dart';
+import '../../services/order_service.dart';
 import 'order_confirmation_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -21,11 +23,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   late List<Product> _cartItems;
   late List<int> _quantities;
   bool _isLoading = false;
+  String _paymentMethod = 'Tunai';
 
   @override
   void initState() {
     super.initState();
-    // PENTING: Copy list agar bisa diubah (dihapus)
     _cartItems = List.from(widget.cartItems);
     _quantities = List.generate(_cartItems.length, (index) => 1);
   }
@@ -55,9 +57,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Hapus Item'),
         content: Text('Hapus ${_cartItems[index].nama} dari keranjang?'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -78,9 +78,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Hapus'),
           ),
         ],
@@ -90,15 +88,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   void _removeAllItems() {
     if (_cartItems.isEmpty) return;
-    
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Hapus Semua Item'),
         content: const Text('Apakah Anda yakin ingin menghapus semua item dari keranjang?'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -119,9 +115,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Hapus Semua'),
           ),
         ],
@@ -138,11 +132,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() => _isLoading = false);
 
-      // Buat list item pesanan
+    try {
+      final userId = await AuthService.getUserId();
+      final userData = await AuthService.login(
+        email: 'user@roti515.com', // Ganti dengan email user yang login
+        password: 'password',
+      );
+
       List<Map<String, dynamic>> orderItems = [];
       for (int i = 0; i < _cartItems.length; i++) {
         orderItems.add({
@@ -152,14 +149,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         });
       }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OrderConfirmationScreen(
-            totalAmount: total,
-            orderItems: orderItems,
+      final orderData = {
+        'user_id': userId != null ? int.parse(userId) : null,
+        'customer_name': userData['user']?['nama'] ?? 'Customer',
+        'customer_email': userData['user']?['email'] ?? 'customer@email.com',
+        'customer_phone': userData['user']?['phone'] ?? '',
+        'total_amount': total,
+        'payment_method': _paymentMethod,
+        'items': orderItems,
+      };
+
+      final result = await OrderService().createOrder(orderData);
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (result['success'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderConfirmationScreen(
+              totalAmount: total,
+              orderItems: orderItems,
+              orderNumber: result['order_number'],
+            ),
           ),
-        ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Gagal memproses pesanan'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -238,9 +265,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text('Kembali Belanja'),
           ),
@@ -317,10 +342,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Expanded(
                       child: Text(
                         product.nama,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -369,10 +391,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           alignment: Alignment.center,
                           child: Text(
                             '$quantity',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         ),
                         _buildQuantityButton(
@@ -515,48 +534,71 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppColors.toggleBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.monetization_on_outlined, size: 20, color: Colors.white),
+          Row(
+            children: [
+              Expanded(
+                child: _buildPaymentOption(
+                  icon: Icons.monetization_on_outlined,
+                  title: 'Tunai',
+                  subtitle: 'Bayar langsung di toko',
+                  isSelected: _paymentMethod == 'Tunai',
+                  onTap: () => setState(() => _paymentMethod = 'Tunai'),
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Tunai', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                      Text('Bayar langsung di toko', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                    ],
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPaymentOption(
+                  icon: Icons.qr_code_scanner,
+                  title: 'QRIS',
+                  subtitle: 'Scan kode QR',
+                  isSelected: _paymentMethod == 'QRIS',
+                  onTap: () => setState(() => _paymentMethod = 'QRIS'),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Berlaku',
-                    style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.toggleBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: isSelected ? AppColors.primary : AppColors.textHint, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.textHint,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 10, color: AppColors.textHint),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -566,7 +608,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     for (int qty in _quantities) {
       totalItems += qty;
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

@@ -74,12 +74,11 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   List<Product> _products = [];
   List<Product> _bestSellers = [];
-  List<Product> _allProducts =
-      []; // Untuk menyimpan semua produk (keperluan search)
+  List<Product> _allProducts = [];
   bool _isLoading = true;
   int _cartCount = 0;
   final List<Product> _cartItems = [];
-  int _notifCount = 3; // ganti angka ini sesuai jumlah notifikasi
+  int _notifCount = 3;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -95,12 +94,9 @@ class _HomeContentState extends State<HomeContent> {
     super.dispose();
   }
 
-  // LOAD PRODUK DARI DATABASE
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
-
     final products = await ProductService.getProducts();
-
     setState(() {
       _allProducts = products;
       _products = products;
@@ -109,7 +105,6 @@ class _HomeContentState extends State<HomeContent> {
     });
   }
 
-  // SEARCH PRODUK
   void _searchProducts(String query) {
     setState(() {
       if (query.isEmpty) {
@@ -139,10 +134,7 @@ class _HomeContentState extends State<HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    int totalPrice = _cartItems.fold(
-      0,
-      (sum, item) => sum + item.harga.toInt(),
-    );
+    int totalPrice = _cartItems.fold(0, (sum, item) => sum + item.harga.toInt());
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -165,8 +157,7 @@ class _HomeContentState extends State<HomeContent> {
                 title: 'Paling Terlaris',
                 showLihatSemua: true,
                 onLihatSemua: () {
-                  final homeState = context
-                      .findAncestorStateOfType<_HomeScreenState>();
+                  final homeState = context.findAncestorStateOfType<_HomeScreenState>();
                   homeState?.setState(() => homeState._currentIndex = 1);
                 },
               ),
@@ -178,19 +169,9 @@ class _HomeContentState extends State<HomeContent> {
       ),
       floatingActionButton: CartFab(
         itemCount: _cartCount,
-        onTap: () {
-          if (_cartItems.isNotEmpty) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CheckoutScreen(
-                  cartItems: _cartItems,
-                  totalAmount: totalPrice,
-                ),
-              ),
-            );
-          }
-        },
+        cartItems: _cartItems,
+        totalPrice: totalPrice,
+        onTap: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
@@ -211,10 +192,9 @@ class _HomeContentState extends State<HomeContent> {
               letterSpacing: 2,
             ),
           ),
-          // ── Ikon notifikasi dengan badge ──
           GestureDetector(
             onTap: () {
-              setState(() => _notifCount = 0); // tandai sudah dibaca
+              setState(() => _notifCount = 0);
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const NotificationScreen()),
@@ -288,8 +268,7 @@ class _HomeContentState extends State<HomeContent> {
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () {
-                      final homeState = context
-                          .findAncestorStateOfType<_HomeScreenState>();
+                      final homeState = context.findAncestorStateOfType<_HomeScreenState>();
                       homeState?.setState(() => homeState._currentIndex = 1);
                     },
                     style: ElevatedButton.styleFrom(
@@ -364,7 +343,6 @@ class _HomeContentState extends State<HomeContent> {
 
   Widget _buildBestSellerGrid() {
     if (_isLoading) return const SizedBox.shrink();
-
     if (_bestSellers.isEmpty) return const SizedBox.shrink();
 
     return Padding(

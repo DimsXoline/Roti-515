@@ -1,5 +1,5 @@
 name: project_2
-description: "A new Flutter project."
+description: "Aplikasi Roti 515 - Pemesanan Roti Online"
 publish_to: "none"
 
 version: 1.0.0+1
@@ -10,10 +10,24 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.2.0
-  image_picker: ^1.0.5
+  
+  # UI & Utility
   cupertino_icons: ^1.0.8
   intl: ^0.19.0
+  
+  # Networking & API
+  http: ^1.2.0
+  
+  # Image & Camera
+  image_picker: ^1.0.5
+  
+  # Maps & URL Launcher (untuk petunjuk jalan)
+  url_launcher: ^6.3.0
+  
+  # Firebase (Notifikasi Real-time)
+  firebase_core: ^3.12.0
+  firebase_messaging: ^15.2.0
+  flutter_local_notifications: ^18.0.0
 
 dev_dependencies:
   flutter_test:
@@ -22,3 +36,22 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  # Assets (gambar lokal jika ada)
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  #   - assets/fonts/
+  
+  # Fonts custom (jika pakai font Poppins)
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+  #         weight: 400
+  #       - asset: assets/fonts/Poppins-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Poppins-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/Poppins-Bold.ttf
+  #         weight: 700
